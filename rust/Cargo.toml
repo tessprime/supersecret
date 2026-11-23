@@ -1,0 +1,18 @@
+[package]
+name = "supersecret"
+version = "0.3.0"
+edition = "2021"
+description = "Keep credentials outside your repositories: the supersecret store (~/.supersecret), from Rust, and a CLI."
+license = "MIT"
+repository = "https://github.com/tessprime/supersecret"
+rust-version = "1.74"
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[[bin]]
+name = "supersecret"
+path = "src/bin/supersecret.rs"

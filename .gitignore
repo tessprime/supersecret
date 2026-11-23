@@ -2,3 +2,6 @@ build
 dist
 secrets.egg-info
 *.pyc
+*.egg-info
+__pycache__/
+rust/target/

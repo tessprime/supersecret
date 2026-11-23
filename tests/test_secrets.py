@@ -11,9 +11,10 @@ class TestSecrets(unittest.TestCase):
         SECRET = "Abracdabra"
         SECRET2 = "Abracdabra2"
 
-        # Create provider
+        # Create provider (setProvider: assigning secrets.provider wouldn't
+        # reach the functions, and the test would use the real store)
         provider = secrets.FileSystemProvider("data/secrets/")
-        secrets.provider = provider
+        secrets.setProvider(provider)
 
         # Create a Scope
         secrets.removeAllSecrets(SCOPE)

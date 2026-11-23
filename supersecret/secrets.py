@@ -10,10 +10,16 @@ class NoSuchSecret(Exception):
     def __str__(self):
         return "'%s' is not a secret in scope '%s'" % (self.key, self.scope)
 
+def default_path():
+    """The store folder: $SUPERSECRET_DIR if set, else ~/.supersecret."""
+    return os.environ.get("SUPERSECRET_DIR") or os.path.expanduser("~/.supersecret")
+
 class FileSystemProvider(object):
-    def __init__(self, path=os.path.expanduser("~/.supersecret"), creds=None):
+    def __init__(self, path=None, creds=None):
+        if path is None:
+            path = default_path()
         if not os.path.exists(path):
-            os.makedirs(path)
+            os.makedirs(path, mode=0o700)
         if creds == None:
             creds = credentials
         self.path = path
@@ -46,11 +52,13 @@ class FileSystemProvider(object):
     def storeSecret(self, scope, key, value):
         secrets = self.getSecrets(scope)
         secrets[key] = value
-        # File swap
-        print(secrets)
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_secret_file:
+        # File swap: a private temporary file in the store's own folder (not
+        # /tmp), renamed over the scope, so readers never see half a file.
+        # Never print: callers' output may be recorded (agents' transcripts).
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=self.path,
+                                         prefix="." + scope + ".tmp-") as temp_secret_file:
             json.dump(secrets, temp_secret_file)
-        shutil.move(temp_secret_file.name, self.scope_path(scope))
+        os.replace(temp_secret_file.name, self.scope_path(scope))
 
     def getScopes(self):
         result = []
@@ -68,6 +76,12 @@ class FileSystemProvider(object):
 
 credentials = None
 provider = FileSystemProvider()
+
+def setProvider(new_provider):
+    """Use another provider for the functions below (e.g. a test folder).
+    Assigning supersecret.provider doesn't: these read this module's own."""
+    global provider
+    provider = new_provider
 
 def hasSecret(scope, key):
     return provider.hasSecret(scope, key)
